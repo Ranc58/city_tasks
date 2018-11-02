@@ -4,10 +4,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters import rest_framework as filters
 
+
 from .models import Client, Task, PerformControl
 from .serializers import ClientSerializer, TaskSerializer, ClientTaskSerializer, \
     PerformerSettingSerializer, ControllerSettingSerializer
 from .filters import ClientFilter, TaskFilter
+from .schemas import ClientTasksSchema, TaskClientsSchema
 
 
 class ClientsViewSet(viewsets.ModelViewSet):
@@ -16,6 +18,8 @@ class ClientsViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = ClientFilter
     lookup_field = 'pk'
+    schema = ClientTasksSchema()
+
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -61,6 +65,7 @@ class TasksViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = TaskFilter
     lookup_field = 'pk'
+    schema = TaskClientsSchema()
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())

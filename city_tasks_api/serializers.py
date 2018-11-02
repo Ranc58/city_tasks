@@ -15,7 +15,7 @@ class ClientSerializer(serializers.ModelSerializer):
         )
 
 
-class TaskSerializer(serializers.ModelSerializer):
+class TaskSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Task
@@ -27,7 +27,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class ClientTaskSerializer(serializers.ModelSerializer):
-    controllers = ClientSerializer(source='controller_client', many=True)
+    controllers = ClientSerializer(source='controller', many=True)
 
     class Meta:
         model = Task
@@ -37,3 +37,49 @@ class ClientTaskSerializer(serializers.ModelSerializer):
             'description',
             'controllers',
         )
+
+
+class CheckSerializer(serializers.Serializer):
+    performer = serializers.IntegerField(required=True)
+    controller = serializers.IntegerField(required=True)
+    remove = serializers.BooleanField(required=False)
+
+    def validate_performer(self, value):
+        if not Client.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Not found performer")
+        return value
+
+    def validate_controller(self, value):
+        if not Client.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Not found controller")
+        return value
+
+
+class ControllerSettingSerializer(serializers.Serializer):
+    task = serializers.IntegerField(required=True)
+    controller = serializers.IntegerField(required=True)
+
+    def validate_task(self, value):
+        if not Task.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Not found task")
+        return value
+
+    def validate_controller(self, value):
+        if not Client.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Not found client")
+        return value
+
+
+class PerformerSettingSerializer(serializers.Serializer):
+    to_perform = serializers.IntegerField(required=False)
+    to_remove = serializers.IntegerField(required=False)
+
+    def validate_to_perform(self, value):
+        if not Client.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Not found client")
+        return value
+
+    def validate_to_remove(self, value):
+        if not Client.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Not found client")
+        return value

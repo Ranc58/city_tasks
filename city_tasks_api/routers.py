@@ -22,7 +22,7 @@ class CustomRouter(SimpleRouter):
                 'delete': 'destroy',
             },
             name='{basename}-detail',
-            detail=True,
+            detail=False,
             initkwargs={'suffix': 'Detail'}
         ),
         DynamicRoute(
@@ -30,5 +30,5 @@ class CustomRouter(SimpleRouter):
             name='{basename}-{url_name}',
             detail=True,
             initkwargs={}
-        )
+        ),
     ]

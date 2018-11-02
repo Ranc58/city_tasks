@@ -89,17 +89,18 @@ class TestClientsHandler(APITestCase):
         self.assertFalse(client_exist)
 
     def test_get_client_tasks(self):
-        client_performer = ClientFactory()
-        client_controller = ClientFactory()
+        performer = ClientFactory()
+        controller = ClientFactory()
         task = TaskFactory()
-        task.performer_client.set((client_performer, ))
-        task.controller_client.set((client_controller, ))
-        url = reverse('client-tasks', kwargs=dict(pk=client_performer.pk))
+        task.performer.add(performer)
+        task.controller.add(controller)
+        url = reverse('client-tasks', kwargs=dict(pk=performer.pk))
         response = self.client.get(url)
         tasks = Task.objects.filter(pk=task.pk)
         expected_result = ClientTaskSerializer(tasks, many=True)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), expected_result.data)
+        self.assertEqual(len(response.json()[0]['controllers']), 1)
 
 
 class TestTasksHandler(APITestCase):
@@ -182,12 +183,36 @@ class TestTasksHandler(APITestCase):
         self.assertFalse(task_exist)
 
     def test_get_task_performers(self):
-        client_performer = ClientFactory()
         task = TaskFactory()
-        task.performer_client.set((client_performer, ))
-        url = reverse('task-clients', kwargs=dict(pk=client_performer.pk))
+        performer = ClientFactory()
+        task.performer.add(performer)
+        url = reverse('task-clients', kwargs=dict(pk=performer.pk))
         response = self.client.get(url)
-        clients = Client.objects.filter(pk=client_performer.pk)
+        clients = task.performer.all()
         expected_result = ClientSerializer(clients, many=True)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), expected_result.data)
+
+    def test_add_performer_to_task(self):
+        task = TaskFactory()
+        performer = ClientFactory()
+        url = reverse('task-clients', kwargs=dict(pk=performer.pk))
+        data = {
+            'to_perform': int(performer.pk)
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(task.performer.first().pk, data['to_perform'])
+
+    def test_remove_performer_from_task(self):
+
+        performer = ClientFactory()
+        task = TaskFactory()
+        task.performer.add(performer)
+        url = reverse('task-clients', kwargs=dict(pk=performer.pk))
+        data = {
+            'to_remove': int(performer.pk)
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(task.performer.all())

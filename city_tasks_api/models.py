@@ -7,23 +7,34 @@ class Client(models.Model):
     position = models.CharField(max_length=100, verbose_name=_('Present position'))
     city = models.CharField(max_length=100, verbose_name=_('City'))
 
-    def __str__(self):
-        return self.name
-
 
 class Task(models.Model):
     title = models.CharField(max_length=100, verbose_name=_('Task title'))
     description = models.TextField(verbose_name=_('Task description'))
-    performer_client = models.ManyToManyField(
-        Client,
-        verbose_name=_('Performer'),
-        related_name='performer_in_tasks'
+    performer = models.ManyToManyField(Client, related_name='performer_in_tasks')
+    controller = models.ManyToManyField(Client, related_name='controller_in_tasks')
+
+
+class PerformControl(models.Model):
+    task = models.ForeignKey(
+        Task,
+        related_name='perfomed_task',
+        on_delete=models.CASCADE
     )
-    controller_client = models.ManyToManyField(
+    performer = models.ForeignKey(
         Client,
-        verbose_name=_('Controller'),
-        related_name='controller_in_tasks'
+        related_name='performer_from_control',
+        on_delete=models.CASCADE
+    )
+    controller = models.ForeignKey(
+        Client,
+        related_name='controller_from_control',
+        on_delete=models.CASCADE
     )
 
-    def __str__(self):
-        return self.title
+    class Meta:
+        unique_together = ('task', 'performer', 'controller')
+
+    def save(self, *args, **kwargs):
+        self.task.controller.add(self.controller)
+        super().save(*args, **kwargs)

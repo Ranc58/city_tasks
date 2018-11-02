@@ -1,5 +1,7 @@
+import random
+
 import factory
-from .models import Task, Client
+from .models import Task, Client, PerformControl
 
 
 class ClientFactory(factory.django.DjangoModelFactory):
@@ -17,3 +19,13 @@ class TaskFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = Task
+
+
+class PerformControlFactory(factory.django.DjangoModelFactory):
+
+    task = factory.SubFactory(TaskFactory)
+    performer = factory.SubFactory(ClientFactory)
+    controller = factory.SubFactory(ClientFactory)
+
+    class Meta:
+        model = PerformControl

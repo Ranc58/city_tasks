@@ -9,3 +9,9 @@ class ClientFilter(FilterSet):
         model = Client
         fields = ['position']
 
+
+class TaskFilter(FilterSet):
+
+    class Meta:
+        model = Task
+        fields = ['title']

@@ -13,7 +13,7 @@ class ClientFactory(factory.django.DjangoModelFactory):
 
 class TaskFactory(factory.django.DjangoModelFactory):
     title = factory.Faker('word')
-    description=factory.Faker('sentence')
+    description = factory.Faker('sentence')
 
     class Meta:
         model = Task

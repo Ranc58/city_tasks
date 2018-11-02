@@ -7,7 +7,7 @@ from django_filters import rest_framework as filters
 
 from .models import Client, Task
 from .serializers import ClientSerializer, TaskSerializer, ClientTaskSerializer
-from .filters import ClientFilter
+from .filters import ClientFilter, TaskFilter
 
 
 class ClientsViewSet(viewsets.ModelViewSet):
@@ -38,12 +38,45 @@ class ClientsViewSet(viewsets.ModelViewSet):
         client = self.get_object()
         if not client:
             return Response([])
-        tasks = Task.objects.prefetch_related('controller_client').filter(performer_client=client)
+        tasks = Task.objects.prefetch_related(
+            'controller_client'
+        ).filter(performer_client=client)
         serializer = ClientTaskSerializer(data=tasks, many=True)
         serializer.is_valid()
         return Response(serializer.data)
 
 
-class TasksViewSet(viewsets.ViewSet):
-    pass
+class TasksViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = TaskFilter
+    lookup_field = 'pk'
 
+    def get_queryset(self):
+        return Task.objects.prefetch_related(
+            'performer_client',
+            'controller_client'
+        ).all()
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        obj = get_object_or_404(queryset, pk=self.kwargs.get('pk'))
+        return obj
+
+    @action(detail=True)
+    def clients(self, request, pk=None):
+        task = self.get_object()
+        if not task:
+            return Response([])
+        clients = Client.objects.prefetch_related(
+            'performer_in_tasks'
+        ).filter(performer_in_tasks=task)
+        serializer = ClientSerializer(data=clients, many=True)
+        serializer.is_valid()
+        return Response(serializer.data)

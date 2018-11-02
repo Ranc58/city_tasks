@@ -3,7 +3,7 @@ from rest_framework import status
 from django.urls import reverse
 
 from .models import Task, Client
-from .serializers import ClientSerializer, ClientTaskSerializer
+from .serializers import ClientSerializer, ClientTaskSerializer, TaskSerializer
 from .factories import ClientFactory, TaskFactory
 
 
@@ -96,7 +96,98 @@ class TestClientsHandler(APITestCase):
         task.controller_client.set((client_controller, ))
         url = reverse('client-tasks', kwargs=dict(pk=client_performer.pk))
         response = self.client.get(url)
-        expected_result = ClientTaskSerializer(Task.objects.filter(pk=task.pk), many=True)
+        tasks = Task.objects.filter(pk=task.pk)
+        expected_result = ClientTaskSerializer(tasks, many=True)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), expected_result.data)
 
+
+class TestTasksHandler(APITestCase):
+
+    def test_get_tasks_list(self):
+        task_created = TaskFactory()
+        url = reverse('task-list')
+        response = self.client.get(url)
+        data = response.json()
+        task = Task.objects.filter(pk=task_created.pk)
+        expected_result = TaskSerializer(task, many=True)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data, expected_result.data)
+
+    def test_get_tasks_by_title(self):
+        TaskFactory(
+            title='test_title'
+        )
+        TaskFactory(
+            title='test_title'
+        )
+        TaskFactory()
+        url = reverse('task-list')
+        response = self.client.get(url, {'title': 'test_title'})
+        tasks = Task.objects.filter(title='test_title')
+        expected_result = TaskSerializer(tasks, many=True)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), expected_result.data)
+
+    def test_post_task(self):
+        url = reverse('task-list')
+        data = {
+            'title': 'test_title',
+            'description': 'test_description',
+        }
+        response = self.client.post(url, data=data)
+        expected_client = TaskSerializer(Task.objects.get(title=data.get('title')))
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.json(), expected_client.data)
+
+    def test_get_task_detail(self):
+        task = TaskFactory()
+        url = reverse('task-detail', kwargs=dict(pk=task.pk))
+        response = self.client.get(url)
+        task_data = TaskSerializer(task)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), task_data.data)
+
+    def test_put_task(self):
+        task = TaskFactory()
+        url = reverse('task-detail', kwargs=dict(pk=task.pk))
+        data = {
+            'title': 'test_title',
+            'description': 'test_description',
+        }
+        response = self.client.put(url, data=data)
+        updated_task = Task.objects.get(pk=task.pk)
+        expected_task = TaskSerializer(updated_task)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), expected_task.data)
+
+    def test_patch_task(self):
+        task = TaskFactory()
+        url = reverse('task-detail', kwargs=dict(pk=task.pk))
+        data = {
+            'title': 'test_title',
+        }
+        response = self.client.patch(url, data=data)
+        patched_task = Task.objects.get(pk=task.pk)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['title'], patched_task.title)
+
+    def test_delete_task(self):
+        task = TaskFactory()
+        url = reverse('task-detail', kwargs=dict(pk=task.pk))
+        response = self.client.delete(url)
+        task_exist = Client.objects.filter(pk=task.pk).exists()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(task_exist)
+
+    def test_get_task_performers(self):
+        client_performer = ClientFactory()
+        task = TaskFactory()
+        task.performer_client.set((client_performer, ))
+        url = reverse('task-clients', kwargs=dict(pk=client_performer.pk))
+        response = self.client.get(url)
+        clients = Client.objects.filter(pk=client_performer.pk)
+        expected_result = ClientSerializer(clients, many=True)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), expected_result.data)

@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 
-from .models import Task, Client
+from .models import Task, Client, PerformControl
 from .serializers import ClientSerializer, ClientTaskSerializer, TaskSerializer
 from .factories import ClientFactory, TaskFactory
 
@@ -101,6 +101,22 @@ class TestClientsHandler(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), expected_result.data)
         self.assertEqual(len(response.json()[0]['controllers']), 1)
+
+    def test_set_controller(self):
+        performer = ClientFactory()
+        controller = ClientFactory()
+        task = TaskFactory()
+        task.controller.add(performer)
+        url = reverse('client-tasks', kwargs=dict(pk=performer.pk))
+        data = {
+            'task': task.pk,
+            'controller': controller.pk
+        }
+        response = self.client.post(url, data)
+        perform_control = PerformControl.objects.first()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(perform_control.performer, performer)
+        self.assertEqual(perform_control.controller, controller)
 
 
 class TestTasksHandler(APITestCase):

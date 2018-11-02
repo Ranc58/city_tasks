@@ -25,4 +25,6 @@ Training project
     - For run tests (from `src`) `python3 manage.py test`.
     
 
-  
+# Ho to use
+
+API Doc you can find here `http://127.0.0.1:8000/api_doc`

@@ -1,0 +1,36 @@
+sudo: required
+
+services:
+  - postgresql
+
+language: python
+python:
+    - "3.6"
+
+notifications:
+  email: false
+
+before_install:
+  - export DB_NAME=city_tasks
+  - export DB_USER=city_tasks
+  - export DB_PASS=city_tasks
+  - export DB_PORT=5432
+  - export DB_HOST=localhost
+  - psql -U postgres -c "CREATE USER $DB_USER PASSWORD '$DB_PASS'"
+  - psql -U postgres -c "CREATE DATABASE $DB_NAME OWNER $DB_USER"
+  - psql -U postgres -c "ALTER ROLE $DB_USER CREATEDB;"
+
+install:
+  - pip3 install -r src/requirements.txt
+  - pip3 install coveralls
+  - pip3 install coverage
+  - python3 src/manage.py migrate
+
+before_script: cd src
+
+script:
+  - coverage run --source='.' manage.py test
+  - coverage report -m
+
+after_success:
+  - coveralls

@@ -202,7 +202,7 @@ class TestTasksHandler(APITestCase):
         task = TaskFactory()
         performer = ClientFactory()
         task.performer.add(performer)
-        url = reverse('task-clients', kwargs=dict(pk=performer.pk))
+        url = reverse('task-clients', kwargs=dict(pk=task.pk))
         response = self.client.get(url)
         clients = task.performer.all()
         expected_result = ClientSerializer(clients, many=True)
@@ -212,7 +212,7 @@ class TestTasksHandler(APITestCase):
     def test_add_performer_to_task(self):
         task = TaskFactory()
         performer = ClientFactory()
-        url = reverse('task-clients', kwargs=dict(pk=performer.pk))
+        url = reverse('task-clients', kwargs=dict(pk=task.pk))
         data = {
             'to_perform': int(performer.pk)
         }
@@ -225,7 +225,7 @@ class TestTasksHandler(APITestCase):
         performer = ClientFactory()
         task = TaskFactory()
         task.performer.add(performer)
-        url = reverse('task-clients', kwargs=dict(pk=performer.pk))
+        url = reverse('task-clients', kwargs=dict(pk=task.pk))
         data = {
             'to_remove': int(performer.pk)
         }
